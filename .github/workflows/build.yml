@@ -1,0 +1,47 @@
+name: Build Borderless-Gaming
+
+on:
+  push:
+    branches:
+      - main  # 当推送到 main 分支时触发
+  pull_request:
+    branches:
+      - main  # 处理 PR 时触发
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    runs-on: windows-latest  # 使用最新 Windows 服务器，包含 VS2022
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v3
+
+      - name: 设置 .NET 8 环境
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'  # 安装 .NET 8 SDK
+
+      - name: 还原 NuGet 依赖
+        run: dotnet restore BorderlessGaming.sln
+
+      - name: 编译项目
+        run: dotnet build BorderlessGaming.sln --configuration Release --no-restore
+
+      - name: 打包可执行文件
+        run: |
+          mkdir artifact
+          copy BorderlessGaming\bin\Release\net8.0-windows\* artifact\
+        shell: cmd
+
+      - name: 上传编译产物
+        uses: actions/upload-artifact@v3
+        with:
+          name: BorderlessGaming
+          path: artifact/
+          
+      - name: 发布 Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifact/BorderlessGaming.exe
+          tag_name: latest
